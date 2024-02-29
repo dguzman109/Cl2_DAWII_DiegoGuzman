@@ -1,0 +1,113 @@
+package com.cibertec.assessment.service.imp;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.cibertec.assessment.beans.SquareBean;
+import com.cibertec.assessment.model.Square;
+import com.cibertec.assessment.repo.SquareRepo;
+import com.cibertec.assessment.service.PolygonService;
+import com.cibertec.assessment.service.SquareService;
+
+@Service
+public class SquareServiceImpl implements SquareService{
+
+	@Autowired 
+	SquareRepo squareRepo;
+	
+	@Autowired
+	PolygonService polygonService;
+	
+	//Al momento de crear se debe validar si 
+	//alguno de parte del cuadrado se encuentra dentro de algun
+	//poligono y de ser asi se debe capturar el id de los poligonos y 
+	//guardar como un string pero con formato de array
+	//Ejemplo polygons = "["1","2"]"
+	//Se guardan los ids correspondites
+	//usar los metodos ya existentes para listar polygonos
+	@Override
+	public Square create(Square s) {
+		return squareRepo.save(s);
+	}
+
+	@Override
+	public List<SquareBean> list() {
+		List<Square> list = squareRepo.findAll();
+		List<SquareBean> listSquareBeans = new ArrayList<>();
+		list.forEach(s -> {
+			Integer[] intArrayX = new Integer[4];
+			Integer[] intArrayY = new Integer[4];
+			Integer[] intArraypolygons = new Integer[4];
+
+			convertStringInIntegerArray(s.getXPoints(), s.getYPoints(),s.getPolygons(), intArrayX, intArrayY,intArraypolygons);
+
+			SquareBean squareBean = new SquareBean();
+			squareBean.setId(s.getId());
+			squareBean.setName(s.getName());
+			squareBean.setXPoints(intArrayX);
+			squareBean.setYPoints(intArrayY);
+			squareBean.setNpoints(s.getNpoints());
+			squareBean.setPolygons(intArraypolygons);
+
+			listSquareBeans.add(squareBean);
+		});
+
+		return listSquareBeans;
+	}
+
+	private void convertStringInIntegerArray(String xPoints, String yPoints, String polygons, Integer[] intArrayX, Integer[] intArrayY, Integer[] intArraypolygons) {
+	    // Validar que las cadenas de entrada no sean nulas
+	    validateNotNull(xPoints, "xPoints");
+	    validateNotNull(yPoints, "yPoints");
+	    validateNotNull(polygons, "polygons");
+
+	    // Limpiar las cadenas eliminando los corchetes
+	    String cleanedXPoints = cleanString(xPoints);
+	    String cleanedYPoints = cleanString(yPoints);
+	    String cleanedpolygons = cleanString(polygons);
+
+	    // Dividir las cadenas por comas
+	    String[] partsX = cleanedXPoints.split(", ");
+	    String[] partsY = cleanedYPoints.split(", ");
+	    String[] partspolygons = cleanedpolygons.split(",");
+
+	    // Validar que las longitudes de los arrays coincidan
+	    validateArrayLength(partsX, intArrayX, "XPoints");
+	    validateArrayLength(partsY, intArrayY, "YPoints");
+	    validateArrayLength(partspolygons, intArraypolygons, "Polygons");
+
+	    // Convertir las partes a enteros y manejar excepciones si es necesario
+	    convertAndPopulateArray(partsX, intArrayX, "XPoints");
+	    convertAndPopulateArray(partsY, intArrayY, "YPoints");
+	    convertAndPopulateArray(partspolygons, intArraypolygons, "Polygons");
+	}
+
+	private void validateNotNull(String value, String fieldName) {
+	    if (value == null) {
+	        throw new IllegalArgumentException(fieldName + " cannot be null");
+	    }
+	}
+
+	private String cleanString(String input) {
+	    return input.trim().substring(1, input.trim().length() - 1);
+	}
+
+	private void validateArrayLength(String[] parts, Integer[] intArray, String arrayName) {
+	    if (parts.length != intArray.length) {
+	        throw new IllegalArgumentException(arrayName + " array length mismatch");
+	    }
+	}
+
+	private void convertAndPopulateArray(String[] parts, Integer[] intArray, String arrayName) {
+	    for (int i = 0; i < parts.length; i++) {
+	        try {
+	            intArray[i] = Integer.parseInt(parts[i]);
+	        } catch (NumberFormatException e) {
+	            throw new IllegalArgumentException("Invalid integer in " + arrayName + " string: " + parts[i]);
+	        }
+	    }
+	}
+}

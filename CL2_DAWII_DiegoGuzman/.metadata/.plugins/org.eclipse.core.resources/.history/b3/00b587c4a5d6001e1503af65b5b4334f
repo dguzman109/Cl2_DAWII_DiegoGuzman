@@ -1,0 +1,80 @@
+package com.cibertec.assessment.service.imp;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.cibertec.assessment.beans.SquareBean;
+import com.cibertec.assessment.model.Square;
+import com.cibertec.assessment.repo.SquareRepo;
+import com.cibertec.assessment.service.PolygonService;
+import com.cibertec.assessment.service.SquareService;
+
+@Service
+public class SquareServiceImpl implements SquareService{
+
+	@Autowired 
+	SquareRepo squareRepo;
+	
+	@Autowired
+	PolygonService polygonService;
+	
+	//Al momento de crear se debe validar si 
+	//alguno de parte del cuadrado se encuentra dentro de algun
+	//poligono y de ser asi se debe capturar el id de los poligonos y 
+	//guardar como un string pero con formato de array
+	//Ejemplo polygons = "["1","2"]"
+	//Se guardan los ids correspondites
+	//usar los metodos ya existentes para listar polygonos
+	@Override
+	public Square create(Square s) {
+		return squareRepo.save(s);
+	}
+
+	@Override
+	public List<SquareBean> list() {
+		List<Square> list = squareRepo.findAll();
+		List<SquareBean> listSquareBeans = new ArrayList<>();
+		list.forEach(s -> {
+			Integer[] intArrayX = new Integer[4];
+			Integer[] intArrayY = new Integer[4];
+			Integer[] intArraypolygons = new Integer[4];
+
+			convertStringInIntegerArray(s.getXPoints(), s.getYPoints(),s.getPolygons(), intArrayX, intArrayY,intArraypolygons);
+
+			SquareBean squareBean = new SquareBean();
+			squareBean.setId(s.getId());
+			squareBean.setName(s.getName());
+			squareBean.setXPoints(intArrayX);
+			squareBean.setYPoints(intArrayY);
+			squareBean.setNpoints(s.getNpoints());
+			squareBean.setPolygons(intArraypolygons);
+
+			listSquareBeans.add(squareBean);
+		});
+
+		return listSquareBeans;
+	}
+
+	public int[] convertStringInIntegerArray(String input) {
+	    if (input == null || input.isEmpty()) {
+	        throw new IllegalArgumentException("Input string is null or empty");
+	    }
+
+	    String[] points = input.split(",");
+	    int[] result = new int[points.length];
+
+	    for (int i = 0; i < points.length; i++) {
+	        try {
+	            result[i] = Integer.parseInt(points[i]);
+	        } catch (NumberFormatException e) {
+	            throw new IllegalArgumentException("Invalid integer in input string: " + points[i]);
+	        }
+	    }
+
+	    return result;
+	}
+
+}
